@@ -1,0 +1,64 @@
+application:
+    api:
+        swagger:
+            path: /api-docs/swagger
+            version: 3.19.4
+            layout: StandaloneLayout
+            deepLinking: true
+            urls:
+            - name: ms-salesforce
+              url: ${api.basepath:}/api-docs/swagger/ms-salesforce-0.1.yml
+
+micronaut:
+    application:
+        name: ms-salesforce
+    router:
+        static-resources:
+            swagger:
+                paths: classpath:META-INF/swagger
+                mapping: ${application.api.swagger.path}/**
+
+# Redis Cache
+redis:
+    serializer: io.micronaut.jackson.serialize.JacksonObjectSerializer
+    type: pool
+    uri: redis://${redis.host:172.17.0.2}:${redis.port:6379}/${redis.database:0}
+    masterName: salesforcemaster
+    caches:
+        salesforcetoken:
+            maximumSize: 1
+            valueSerializer: ${redis.serializer}
+        salesforcemetadata:
+            maximumSize: 1
+            valueSerializer: ${redis.serializer}
+
+# Redis keys prefix
+redisKeysPrefix: ${redis.keys.prefix:salesforce}-${app.env:local}|
+
+# Health check
+endpoints:
+    health:
+        enabled: true
+        details-visible: ANONYMOUS
+        
+# SalesForce Properties
+salesforce:
+    testEndpoint:    
+        api-url: ${salesforce.api.url:`https://test.salesforce.com`}
+        api-version: ${salesforce.api.version:services/data/v45.0}
+        test-endpoint: sobjects/Case
+    token:
+        url: ${salesforce.token.url:`https://test.salesforce.com/services/oauth2`}
+        endpoint: token
+        grant-type: password
+        client-id: ${salesforce.client.id:3MVG9GXbtnGKjXe5nc7yDKXG4u6odjmCnKskNpbqQ4Fq_RIa1Et0v1.U.pT3ac3tvArsbwJUIKsqrPcJeJefp}
+        client-secret: ${salesforce.client.secret:CB995D4E0BBF8EB8FEF26569BF792A77F88B132A6A63B80AE951B50B4012EF99}
+        username: ${salesforce.username:uint%40obkspain.com.dev}
+        password: ${salesforce.password:0r4ng3b4nk}
+    header:
+        xCorrelationId: X-Correlation-ID
+        xRequestId: X-Request-ID
+    log:
+        data: data
+        path: path
+        methodName: methodName

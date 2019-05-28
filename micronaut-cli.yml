@@ -1,0 +1,5 @@
+profile: service
+defaultPackage: com.orangebank.salesforce.Application
+---
+testFramework: junit
+sourceLanguage: java

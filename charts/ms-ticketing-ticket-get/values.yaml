@@ -1,0 +1,60 @@
+# Default values for api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 2
+environment: dev
+image:
+  repository: eu.gcr.io/transformation-it/ms-ticketing-ticket-get
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  name: http
+  type: ClusterIP
+  externalPort: 80
+  internalPort: 8080
+autoscaler:
+  enabled: true
+disruptionbudget:
+  enabled: true
+ingress:
+  enabled: true
+  basefqdn: ovid-project.com
+  basepath: /ticketget
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
+resources:
+   limits:
+    cpu: 1000m
+    memory: 1500Mi
+   requests:
+    cpu: 100m
+    memory: 512Mi
+auth:
+  secretName: basic-auth
+endpoints:
+  ticketget: https://masmovil-test-staging.apigee.net/masmovil/v1
+sentry:
+   dsn: https://ee7639e246c243f7be9a62f513f9b0de:de931c92d0c545fba18d47a6674d07b1@sentry.monitoring.thor-dev.com/12
+   project: ms-ticketing-ticket-get
+config:
+  keysPrefix: ticketing
+  redis:
+    host: redis.ittransfront-master
+    port: 6379
+    database: 11
+  salesforce:
+    secretName: salesforce-comm
+    clientIdKey: client_id
+    clientSecretKey: client_secret
+    usernameKey: username
+    passwordKey: password
+    tokenUrl: https://test.salesforce.com/services/oauth2
+    apiUrl: https://masmovil--TESTTKT01.cs102.my.salesforce.com
+    apiVersion: services/data/v44.0
+    ticketUrl: https://masmovil--testtkt01.cs102.my.salesforce.com/

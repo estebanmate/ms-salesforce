@@ -1,0 +1,115 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "api.name" . }}
+  labels:
+    app: {{ template "api.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    tier: backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "api.fullname" . }}
+        release: {{ .Release.Name }}
+        tier: backend
+    spec:
+      affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                      - {{ template "api.fullname" . }}
+                  topologyKey: kubernetes.io/hostname
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: APP_ENV
+            value: {{ .Values.environment }}
+          - name: MICRONAUT_PROFILES_ACTIVE
+            value: {{ .Values.environment }}
+          - name: TRACK
+            value: {{ .Values.environment }}
+          - name: SERVICES_TICKET_GET_BASEPATH
+            value: {{ .Values.endpoints.ticketget }}
+          - name: REDIS_KEYS_PREFIX
+            value: {{ .Values.config.keysPrefix }}
+          - name: API_BASEPATH
+            value: {{ .Values.ingress.basepath }}
+          - name: REDIS_HOST
+            value: {{ .Values.config.redis.host }}
+          - name: REDIS_PORT
+            value: "{{ .Values.config.redis.port }}"
+          - name: REDIS_DATABASE
+            value: "{{ .Values.config.redis.database }}"
+          - name: SALESFORCE_TOKEN_URL
+            value: {{ .Values.config.salesforce.tokenUrl }}
+          - name: SALESFORCE_API_URL
+            value: {{ .Values.config.salesforce.apiUrl }}
+          - name: SALESFORCE_API_VERSION
+            value: {{ .Values.config.salesforce.apiVersion }}
+          - name: SALESFORCE_TICKET_URL
+            value: {{ .Values.config.salesforce.ticketUrl }}
+          - name: SALESFORCE_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.config.salesforce.secretName }}
+                key: {{ .Values.config.salesforce.clientIdKey }}
+          - name: SALESFORCE_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.config.salesforce.secretName }}
+                key: {{ .Values.config.salesforce.clientSecretKey }}
+          - name: SALESFORCE_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.config.salesforce.secretName }}
+                key: {{ .Values.config.salesforce.usernameKey }}
+          - name: SALESFORCE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.config.salesforce.secretName }}
+                key: {{ .Values.config.salesforce.passwordKey }}
+                        
+          ports:
+            - containerPort: {{ .Values.service.internalPort }}
+          livenessProbe:
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+            httpGet:
+              httpHeaders:
+              - name: customer-session-id
+                value: k8s-liveness-probe
+              path: /health
+              port: {{ .Values.service.internalPort }}
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+            httpGet:
+              httpHeaders:
+              - name: customer-session-id
+                value: k8s-liveness-probe
+              path: /health
+              port: {{ .Values.service.internalPort }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+    {{- end }}
